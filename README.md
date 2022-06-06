@@ -9,9 +9,9 @@ The AWS Cloud Development Kit (AWS CDK) is an open-source next generation softwa
 
 ## Project Parts
 
-This Project is devided into services, a comman API Gateway alongside with DyanamoDB table. It relies on constructs to devide the resource into relevant groups.
+This Project is devided into services, a comman API Gateway alongside with DyanamoDB table. It relies on constructs to devide the resources into relevant groups.
 
-A construct is like an components for infrastrcture, it reduces boilerplate and helps in code reuse.
+A construct is like components for infrastrcture, it reduces boilerplate and helps in code reuse.
 
 ## Testing project
 
@@ -19,17 +19,36 @@ Task Cat : TaskCat is a tool that tests AWS CloudFormation templates. It deploys
 
 The main interest in testing CDK projects is :
 
-- Unti Testing Lambda functions
+- Integration Testing : Lambda function
 
-- Integration Testing : Template Code Generation
+- System Testing : Template Code Generation
 
 - Static testing using CDK Nag for security and best practises
 
 - System Testing using task cat
 
-### Unit testing
+### Integration Testing : Lambda function
+
+We are testing to see if the item creation lambda succeeds with status code of 200
+Jest is used for this test with file : test/createOne.test.ts
+
+```typescript
+const event = JSON.parse(fs.readFileSync("test/create.event.json", "utf-8"));
+test("Can Create One Product", async () => {
+  const result = await createOne(event, "products");
+  expect(result).toMatchObject({ statusCode: 200 });
+  return result;
+});
+
+```
 
 ### Template code generation
+
+Our resource template contains a lot of resources and with adding more constructs making sure that the desired new resource is present manually grows harder.
+
+The solution is to generate the template and test for its presence.
+
+In the following example we are going to check if proper api gateway resource is generated
 
 ### Static testing with CDK Nag
 
@@ -39,4 +58,3 @@ The main interest in testing CDK projects is :
 
 The CDK pipeline will consist of building the project, performing the tests and deploying it.
 
-# candy-shop-cdk-project
