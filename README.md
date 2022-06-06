@@ -39,7 +39,6 @@ test("Can Create One Product", async () => {
   expect(result).toMatchObject({ statusCode: 200 });
   return result;
 });
-
 ```
 
 ### Template code generation
@@ -48,7 +47,24 @@ Our resource template contains a lot of resources and with adding more construct
 
 The solution is to generate the template and test for its presence.
 
-In the following example we are going to check if proper api gateway resource is generated
+In the following example we are going to check if table with proper name resource is generated
+
+```typescript
+test("Check for dynamodb table creation in template", () => {
+  // Launch the cdk process and generate stack object
+  const app = new cdk.App();
+  const stack = new Archi.ArchiStack(app, "MyTestStack");
+
+  // Get standard Cloudformation template from stack
+  const template = Template.fromStack(stack);
+
+  /** search explicitely for table named products  */
+  template.hasResource("AWS::DynamoDB::Table", {
+    Properties: { TableName: "products" },
+  });
+});
+```
+
 
 ### Static testing with CDK Nag
 
