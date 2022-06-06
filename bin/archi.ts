@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import * as cdk from "aws-cdk-lib";
+import { Aspects } from "aws-cdk-lib";
+import { AwsSolutionsChecks } from "cdk-nag";
 import { ArchiStack } from "../lib/archi-stack";
 
 const app = new cdk.App();
@@ -13,3 +15,5 @@ new ArchiStack(app, "ArchiStack", {
     region: "us-east-1",
   },
 });
+
+Aspects.of(app).add(new AwsSolutionsChecks());

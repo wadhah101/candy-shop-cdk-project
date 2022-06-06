@@ -16,6 +16,7 @@ specifiers:
   aws-cdk-lib: 2.25.0
   aws-lambda: ^1.0.7
   aws-sdk: ^2.1145.0
+  cdk-nag: ^2.14.26
   constructs: ^10.0.0
   esbuild: ^0.14.42
   jest: ^27.5.1
@@ -37,6 +38,7 @@ dependencies:
   aws-cdk-lib: 2.25.0_constructs@10.1.22
   aws-lambda: 1.0.7
   aws-sdk: 2.1145.0
+  cdk-nag: 2.14.26_iagwwhu7scsl4fbra5kucmdaie
   constructs: 10.1.22
   esbuild: 0.14.42
   uuid: 8.3.2
@@ -2106,6 +2108,16 @@ packages:
   /case/1.6.3:
     resolution: {integrity: sha512-mzDSXIPaFwVDvZAHqZ9VlbyF4yyXRuX6IvB06WvPYkqJVO24kX1PPhv9bfpKNFZyxYFmmgo03HUiD8iklmJYRQ==}
     engines: {node: '>= 0.8.0'}
+    dev: false
+
+  /cdk-nag/2.14.26_iagwwhu7scsl4fbra5kucmdaie:
+    resolution: {integrity: sha512-emOwacq+6kHgVcCqQWRGdznBYt+GlfYU0Bqh4q9XvvxCSXxRL0K5UKrTFDqXpcquvncryegh4Pa2UoFBVdOWgA==}
+    peerDependencies:
+      aws-cdk-lib: ^2.11.0
+      constructs: ^10.0.5
+    dependencies:
+      aws-cdk-lib: 2.25.0_constructs@10.1.22
+      constructs: 10.1.22
     dev: false
 
   /chalk/2.4.2:

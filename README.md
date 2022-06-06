@@ -65,8 +65,16 @@ test("Check for dynamodb table creation in template", () => {
 });
 ```
 
-
 ### Static testing with CDK Nag
+
+CDK nag check generated template for security and linitng issues. It first demands a generated project and the integration is pretty straight forward
+
+```typescript
+Aspects.of(app).add(new AwsSolutionsChecks());
+```
+
+Every time the project is built & the template is synthesised from code the analysis tool is run and outputs the audit result
+![test](./static-test.png)
 
 ### System Testing using task cat
 
