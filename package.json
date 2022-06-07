@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "test-ci": "jest --ci --reporters=default --reporters=jest-junit",
     "test": "jest",
     "cdk": "cdk"
   },
@@ -35,6 +36,7 @@
     "cdk-nag": "^2.14.26",
     "constructs": "^10.0.0",
     "esbuild": "^0.14.42",
+    "jest-junit": "^13.2.0",
     "uuid": "^8.3.2",
     "yup": "^0.32.11"
   }

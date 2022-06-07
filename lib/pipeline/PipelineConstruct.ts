@@ -66,7 +66,13 @@ export class PipelineDeployTest extends Construct {
             commands: ["echo initialise..."],
           },
           build: {
-            commands: ["echo Build started on `date`", "npm run test"],
+            commands: ["echo Build started on `date`", "npm run test-ci"],
+          },
+        },
+        reports: {
+          "candy-shop-report-grouo": {
+            files: ["junit.xml"],
+            "file-format": "JUNITXML",
           },
         },
         artifacts: {
