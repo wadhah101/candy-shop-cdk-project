@@ -1,6 +1,5 @@
 {
   "app": "npx ts-node --prefer-ts-exts bin/archi.ts",
-  "profile": "mhm",
   "watch": {
     "include": [
       "**"
