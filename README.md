@@ -81,7 +81,7 @@ Every time the project is built & the template is synthesised from code the anal
 The CDK pipeline will consist of building the project, performing the tests and deploying it.
 We will be using AWS codepipeline for the pipeline.
 
-For testing result we are going to use AWS report groups to showcase our tests and monitor them here's an example of pipeline run 
+For testing result we are going to use AWS report groups to showcase our tests and monitor them here's an example of pipeline run
 
 ![result](test-screenshot.png)
 
@@ -89,8 +89,53 @@ You can find the pipeline full code in lib/pipeline/PipelineConstruct.ts
 
 The pipeline is divided into 3 parts :
 
-- Sourcing the code from github with a oauth2 token
+- Sourcing the code from github with a oauth2 token.
 
-- Test the project using jest in CodeBuild Project with AWS Standard linux image
+- Test the project using jest in CodeBuild Project with AWS Standard linux image.
 
-- Test the project using npm  & Cloudformation in CodeBuild Project with AWS Standard linux image
+```yaml
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: '14'
+    commands:
+    - n 16
+    - npm install -g pnpm
+    - pnpm install
+  pre_build:
+    commands:
+    - echo initialise...
+  build:
+    commands:
+    - echo Build started on `date`
+    - npm run test-ci
+reports:
+  candy-shop-report-grouo:
+    files:
+    - junit.xml
+    file-format: JUNITXML
+
+```
+
+- Test the project using npm  & Cloudformation in CodeBuild Project with AWS Standard linux image.
+
+```yaml
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      nodejs: '14'
+    commands:
+    - n 16
+    - npm install -g pnpm
+    - pnpm install
+  pre_build:
+    commands:
+    - echo initialise...
+  build:
+    commands:
+    - echo Build started on `date`
+    - npm run cdk deploy
+
+```

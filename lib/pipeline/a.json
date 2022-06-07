@@ -1,0 +1,26 @@
+{
+  "version": 0.2,
+  "phases": {
+    "install": {
+      "runtime-versions": {
+        "nodejs": "14"
+      },
+      "commands": [
+        "n 16",
+        "npm install -g pnpm",
+        "pnpm install"
+      ]
+    },
+    "pre_build": {
+      "commands": [
+        "echo initialise..."
+      ]
+    },
+    "build": {
+      "commands": [
+        "echo Build started on `date`",
+        "npm run cdk deploy"
+      ]
+    }
+  }
+}

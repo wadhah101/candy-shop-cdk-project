@@ -75,9 +75,6 @@ export class PipelineDeployTest extends Construct {
             "file-format": "JUNITXML",
           },
         },
-        artifacts: {
-          // files: `imagedefinitions.json`,
-        },
       }),
     }
   );
@@ -105,15 +102,6 @@ export class PipelineDeployTest extends Construct {
           build: {
             commands: ["echo Build started on `date`", "npm run cdk deploy"],
           },
-        },
-        reports: {
-          "candy-shop-report-grouo": {
-            files: ["junit.xml"],
-            "file-format": "JUNITXML",
-          },
-        },
-        artifacts: {
-          // files: `imagedefinitions.json`,
         },
       }),
     }
