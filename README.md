@@ -2,13 +2,12 @@
 
 This is infrastrcture as code project Generated using the AWS CDK.
 Its main functionality is to translate TS code into Cloudformation Template and deploy it on AWS.
- 
+
 You can find the generated final template in template.yml
 
 ## AWS CDK
 
 The AWS Cloud Development Kit (AWS CDK) is an open-source next generation software development framework to define cloud application resources using familiar programming languages.
-
 
 ## Project Parts
 
