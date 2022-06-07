@@ -15,8 +15,6 @@ A construct is like components for infrastrcture, it reduces boilerplate and hel
 
 ## Testing project
 
-Task Cat : TaskCat is a tool that tests AWS CloudFormation templates. It deploys your AWS CloudFormation template in multiple AWS Regions and generates a report with a pass/fail grade for each region. You can specify the regions and number of Availability Zones you want to include in the test, and pass in parameter values from your AWS CloudFormation template. TaskCat is implemented as a Python class that you import, instantiate, and run.
-
 The main interest in testing CDK projects is :
 
 - Integration Testing : Lambda function
@@ -25,7 +23,6 @@ The main interest in testing CDK projects is :
 
 - Static testing using CDK Nag for security and best practises
 
-- System Testing using task cat
 
 ### Integration Testing : Lambda function
 
@@ -76,9 +73,17 @@ Aspects.of(app).add(new AwsSolutionsChecks());
 Every time the project is built & the template is synthesised from code the analysis tool is run and outputs the audit result
 ![test](./static-test.png)
 
-### System Testing using task cat
-
 ## Devops Project
 
 The CDK pipeline will consist of building the project, performing the tests and deploying it.
+We will be using AWS codepipeline for the pipeline.
 
+You can find the pipeline full code in lib/pipeline/PipelineConstruct.ts
+
+The pipeline is divided into 3 parts :
+
+- Sourcing the code from github with a oauth2 token
+
+- Test the project using jest in CodeBuild Project
+
+- Deploy  

@@ -16,4 +16,4 @@ new ArchiStack(app, "ArchiStack", {
   },
 });
 
-Aspects.of(app).add(new AwsSolutionsChecks());
+// Aspects.of(app).add(new AwsSolutionsChecks());
