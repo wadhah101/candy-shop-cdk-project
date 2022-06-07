@@ -1,0 +1,1540 @@
+Resources:
+  pipelineRole55399C5D:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+        Version: "2012-10-17"
+      Description: Policy used to deploy infrastructure
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/AdministratorAccess
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/Role/Resource
+  pipelineRoleDefaultPolicy668B05DE:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Effect: Allow
+            Resource:
+              - Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - :logs:us-east-1:375778278142:log-group:/aws/codebuild/
+                    - Ref: pipelineCodeBuildProject67E372D5
+                    - :*
+              - Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - :logs:us-east-1:375778278142:log-group:/aws/codebuild/
+                    - Ref: pipelineCodeBuildProject67E372D5
+          - Action:
+              - codebuild:BatchPutCodeCoverages
+              - codebuild:BatchPutTestCases
+              - codebuild:CreateReport
+              - codebuild:CreateReportGroup
+              - codebuild:UpdateReport
+            Effect: Allow
+            Resource:
+              Fn::Join:
+                - ""
+                - - "arn:"
+                  - Ref: AWS::Partition
+                  - :codebuild:us-east-1:375778278142:report-group/
+                  - Ref: pipelineCodeBuildProject67E372D5
+                  - -*
+          - Action:
+              - s3:Abort*
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:GetObject*
+              - s3:List*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - pipelineTestDeployPipelineArtifactsBucketC380C21C
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - pipelineTestDeployPipelineArtifactsBucketC380C21C
+                        - Arn
+                    - /*
+          - Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+              - kms:Encrypt
+              - kms:GenerateDataKey*
+              - kms:ReEncrypt*
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAFAD7FF3
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: pipelineRoleDefaultPolicy668B05DE
+      Roles:
+        - Ref: pipelineRole55399C5D
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/Role/DefaultPolicy/Resource
+  pipelineCodeBuildProject67E372D5:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/standard:5.0
+        ImagePullCredentialsType: CODEBUILD
+        PrivilegedMode: true
+        Type: LINUX_CONTAINER
+      ServiceRole:
+        Fn::GetAtt:
+          - pipelineRole55399C5D
+          - Arn
+      Source:
+        BuildSpec: |-
+          {
+            "version": 0.2,
+            "phases": {
+              "install": {
+                "runtime-versions": {
+                  "nodejs": "14"
+                },
+                "commands": [
+                  "npm install -g pnpm",
+                  "pnpm install"
+                ]
+              },
+              "pre_build": {
+                "commands": [
+                  "echo initialise..."
+                ]
+              },
+              "build": {
+                "commands": [
+                  "echo Build started on `date`",
+                  "npm run test"
+                ]
+              }
+            },
+            "artifacts": {}
+          }
+        Type: CODEPIPELINE
+      Cache:
+        Type: NO_CACHE
+      EncryptionKey:
+        Fn::GetAtt:
+          - pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAFAD7FF3
+          - Arn
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/CodeBuildProject/Resource
+  pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAFAD7FF3:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Statement:
+          - Action: kms:*
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - :iam::375778278142:root
+            Resource: "*"
+        Version: "2012-10-17"
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/ArtifactsBucketEncryptionKey/Resource
+  pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAlias935ED112:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: alias/codepipeline-archistackpipelinetestdeploypipeline38cde5da
+      TargetKeyId:
+        Fn::GetAtt:
+          - pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAFAD7FF3
+          - Arn
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/ArtifactsBucketEncryptionKeyAlias/Resource
+  pipelineTestDeployPipelineArtifactsBucketC380C21C:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              KMSMasterKeyID:
+                Fn::GetAtt:
+                  - pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAFAD7FF3
+                  - Arn
+              SSEAlgorithm: aws:kms
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/ArtifactsBucket/Resource
+  pipelineTestDeployPipelineArtifactsBucketPolicyCD564BE7:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: pipelineTestDeployPipelineArtifactsBucketC380C21C
+      PolicyDocument:
+        Statement:
+          - Action: s3:*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+            Effect: Deny
+            Principal:
+              AWS: "*"
+            Resource:
+              - Fn::GetAtt:
+                  - pipelineTestDeployPipelineArtifactsBucketC380C21C
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - pipelineTestDeployPipelineArtifactsBucketC380C21C
+                        - Arn
+                    - /*
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/ArtifactsBucket/Policy/Resource
+  pipelineTestDeployPipelineRole838CBA13:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/Role/Resource
+  pipelineTestDeployPipelineRoleDefaultPolicy1B171B4B:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:Abort*
+              - s3:DeleteObject*
+              - s3:GetBucket*
+              - s3:GetObject*
+              - s3:List*
+              - s3:PutObject
+              - s3:PutObjectLegalHold
+              - s3:PutObjectRetention
+              - s3:PutObjectTagging
+              - s3:PutObjectVersionTagging
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - pipelineTestDeployPipelineArtifactsBucketC380C21C
+                  - Arn
+              - Fn::Join:
+                  - ""
+                  - - Fn::GetAtt:
+                        - pipelineTestDeployPipelineArtifactsBucketC380C21C
+                        - Arn
+                    - /*
+          - Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+              - kms:Encrypt
+              - kms:GenerateDataKey*
+              - kms:ReEncrypt*
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAFAD7FF3
+                - Arn
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - pipelineTestDeployPipelinebuildBuildContainerCodePipelineActionRole7ACF4AE9
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: pipelineTestDeployPipelineRoleDefaultPolicy1B171B4B
+      Roles:
+        - Ref: pipelineTestDeployPipelineRole838CBA13
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/Role/DefaultPolicy/Resource
+  pipelineTestDeployPipelineD4330BED:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn:
+        Fn::GetAtt:
+          - pipelineTestDeployPipelineRole838CBA13
+          - Arn
+      Stages:
+        - Actions:
+            - ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: wadhah101
+                Repo: candy-shop-cdk-project
+                Branch: master
+                OAuthToken: "{{resolve:secretsmanager:GITHUB_TOKEN:SecretString:::}}"
+                PollForSourceChanges: false
+              Name: sourceFromGithub
+              OutputArtifacts:
+                - Name: Source
+              RunOrder: 1
+          Name: source
+        - Actions:
+            - ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: "1"
+              Configuration:
+                ProjectName:
+                  Ref: pipelineCodeBuildProject67E372D5
+                EnvironmentVariables: "[]"
+              InputArtifacts:
+                - Name: Source
+              Name: BuildContainer
+              OutputArtifacts:
+                - Name: TestOutput
+              RoleArn:
+                Fn::GetAtt:
+                  - pipelineTestDeployPipelinebuildBuildContainerCodePipelineActionRole7ACF4AE9
+                  - Arn
+              RunOrder: 1
+          Name: build
+      ArtifactStore:
+        EncryptionKey:
+          Id:
+            Fn::GetAtt:
+              - pipelineTestDeployPipelineArtifactsBucketEncryptionKeyAFAD7FF3
+              - Arn
+          Type: KMS
+        Location:
+          Ref: pipelineTestDeployPipelineArtifactsBucketC380C21C
+        Type: S3
+      Name: test-deploy-candyshop
+    DependsOn:
+      - pipelineTestDeployPipelineRoleDefaultPolicy1B171B4B
+      - pipelineTestDeployPipelineRole838CBA13
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/Resource
+  pipelineTestDeployPipelinesourcesourceFromGithubWebhookResourceB900BB52:
+    Type: AWS::CodePipeline::Webhook
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: "{{resolve:secretsmanager:GITHUB_TOKEN:SecretString:::}}"
+      Filters:
+        - JsonPath: $.ref
+          MatchEquals: refs/heads/{Branch}
+      TargetAction: sourceFromGithub
+      TargetPipeline:
+        Ref: pipelineTestDeployPipelineD4330BED
+      TargetPipelineVersion: 1
+      RegisterWithThirdParty: true
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/source/sourceFromGithub/WebhookResource
+  pipelineTestDeployPipelinebuildBuildContainerCodePipelineActionRole7ACF4AE9:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              AWS:
+                Fn::Join:
+                  - ""
+                  - - "arn:"
+                    - Ref: AWS::Partition
+                    - :iam::375778278142:root
+        Version: "2012-10-17"
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/build/BuildContainer/CodePipelineActionRole/Resource
+  pipelineTestDeployPipelinebuildBuildContainerCodePipelineActionRoleDefaultPolicy024963FE:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - codebuild:BatchGetBuilds
+              - codebuild:StartBuild
+              - codebuild:StopBuild
+            Effect: Allow
+            Resource:
+              Fn::GetAtt:
+                - pipelineCodeBuildProject67E372D5
+                - Arn
+        Version: "2012-10-17"
+      PolicyName: pipelineTestDeployPipelinebuildBuildContainerCodePipelineActionRoleDefaultPolicy024963FE
+      Roles:
+        - Ref: pipelineTestDeployPipelinebuildBuildContainerCodePipelineActionRole7ACF4AE9
+    Metadata:
+      aws:cdk:path: ArchiStack/pipeline/TestDeployPipeline/build/BuildContainer/CodePipelineActionRole/DefaultPolicy/Resource
+  products606FDFD3:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      TableName: products
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ArchiStack/products/Resource
+  users9E3E6EF7:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      TableName: users
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ArchiStack/users/Resource
+  orders46FA7C19:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+      TableName: orders
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ArchiStack/orders/Resource
+  subscriptions2B2B04D7:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      BillingMode: PAY_PER_REQUEST
+      TableName: subscriptions
+    UpdateReplacePolicy: Delete
+    DeletionPolicy: Delete
+    Metadata:
+      aws:cdk:path: ArchiStack/subscriptions/Resource
+  servicemeshproductServicecrudServiceRole5138B1E5:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/productService/crud/ServiceRole/Resource
+  servicemeshproductServicecrudServiceRoleDefaultPolicy21E86E00:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: dynamodb:*
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - products606FDFD3
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: servicemeshproductServicecrudServiceRoleDefaultPolicy21E86E00
+      Roles:
+        - Ref: servicemeshproductServicecrudServiceRole5138B1E5
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/productService/crud/ServiceRole/DefaultPolicy/Resource
+  servicemeshproductServicecrud7D22A817:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-375778278142-us-east-1
+        S3Key: f16ae11189d723b8bd09f7984b2331293d74594a82425c99fc741cb546562691.zip
+      Role:
+        Fn::GetAtt:
+          - servicemeshproductServicecrudServiceRole5138B1E5
+          - Arn
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+      FunctionName: crud-product
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: nodejs14.x
+      Timeout: 120
+    DependsOn:
+      - servicemeshproductServicecrudServiceRoleDefaultPolicy21E86E00
+      - servicemeshproductServicecrudServiceRole5138B1E5
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/productService/crud/Resource
+      aws:asset:path: asset.f16ae11189d723b8bd09f7984b2331293d74594a82425c99fc741cb546562691
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  servicemeshorderServicecrudServiceRoleDCDA472C:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/orderService/crud/ServiceRole/Resource
+  servicemeshorderServicecrudServiceRoleDefaultPolicy73D5B099:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: dynamodb:*
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - orders46FA7C19
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: servicemeshorderServicecrudServiceRoleDefaultPolicy73D5B099
+      Roles:
+        - Ref: servicemeshorderServicecrudServiceRoleDCDA472C
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/orderService/crud/ServiceRole/DefaultPolicy/Resource
+  servicemeshorderServicecrud188BBC8C:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-375778278142-us-east-1
+        S3Key: 3b093e88e971576c70972d723eb1ffe28e3cebdce429410fb2ea66693b6beb3b.zip
+      Role:
+        Fn::GetAtt:
+          - servicemeshorderServicecrudServiceRoleDCDA472C
+          - Arn
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+      FunctionName: crud-orders
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: nodejs14.x
+      Timeout: 120
+    DependsOn:
+      - servicemeshorderServicecrudServiceRoleDefaultPolicy73D5B099
+      - servicemeshorderServicecrudServiceRoleDCDA472C
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/orderService/crud/Resource
+      aws:asset:path: asset.3b093e88e971576c70972d723eb1ffe28e3cebdce429410fb2ea66693b6beb3b
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  servicemeshauthServiceapiServiceRole0602A398:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/authService/api/ServiceRole/Resource
+  servicemeshauthServiceapiServiceRoleDefaultPolicyB8B2584E:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action: dynamodb:*
+            Effect: Allow
+            Resource:
+              - Fn::GetAtt:
+                  - subscriptions2B2B04D7
+                  - Arn
+              - Fn::GetAtt:
+                  - users9E3E6EF7
+                  - Arn
+              - Ref: AWS::NoValue
+        Version: "2012-10-17"
+      PolicyName: servicemeshauthServiceapiServiceRoleDefaultPolicyB8B2584E
+      Roles:
+        - Ref: servicemeshauthServiceapiServiceRole0602A398
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/authService/api/ServiceRole/DefaultPolicy/Resource
+  servicemeshauthServiceapi9E2283F2:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-375778278142-us-east-1
+        S3Key: 9af9c5b6ab70406bc3a705254f97e0735b7f28f43999189b6690402d3492a4b5.zip
+      Role:
+        Fn::GetAtt:
+          - servicemeshauthServiceapiServiceRole0602A398
+          - Arn
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+      FunctionName: auth-fn
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: nodejs14.x
+      Timeout: 120
+    DependsOn:
+      - servicemeshauthServiceapiServiceRoleDefaultPolicyB8B2584E
+      - servicemeshauthServiceapiServiceRole0602A398
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/authService/api/Resource
+      aws:asset:path: asset.9af9c5b6ab70406bc3a705254f97e0735b7f28f43999189b6690402d3492a4b5
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  servicemeshsubscriptionServicecrudServiceRole3ADB48EF:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/subscriptionService/crud/ServiceRole/Resource
+  servicemeshsubscriptionServicecrud8ECB6403:
+    Type: AWS::Lambda::Function
+    Properties:
+      Code:
+        S3Bucket: cdk-hnb659fds-assets-375778278142-us-east-1
+        S3Key: 9af9c5b6ab70406bc3a705254f97e0735b7f28f43999189b6690402d3492a4b5.zip
+      Role:
+        Fn::GetAtt:
+          - servicemeshsubscriptionServicecrudServiceRole3ADB48EF
+          - Arn
+      Environment:
+        Variables:
+          AWS_NODEJS_CONNECTION_REUSE_ENABLED: "1"
+      FunctionName: subscription-microservice
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: nodejs14.x
+      Timeout: 120
+    DependsOn:
+      - servicemeshsubscriptionServicecrudServiceRole3ADB48EF
+    Metadata:
+      aws:cdk:path: ArchiStack/servicemesh/subscriptionService/crud/Resource
+      aws:asset:path: asset.9af9c5b6ab70406bc3a705254f97e0735b7f28f43999189b6690402d3492a4b5
+      aws:asset:is-bundled: true
+      aws:asset:property: Code
+  apiA9E0BAD5:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: Api containing lambdas
+      Name: Archi api
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Resource
+  apiCloudWatchRoleCB7B51BA:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns:
+        - Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/CloudWatchRole/Resource
+  apiAccountC58B84C9:
+    Type: AWS::ApiGateway::Account
+    Properties:
+      CloudWatchRoleArn:
+        Fn::GetAtt:
+          - apiCloudWatchRoleCB7B51BA
+          - Arn
+    DependsOn:
+      - apiA9E0BAD5
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Account
+  apiDeployment7181E0E227e257b3d5c0d3a1fdf0054b1911cf8b:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: apiA9E0BAD5
+      Description: Automatically created by the RestApi construct
+    DependsOn:
+      - apiauth6FAAB232
+      - apiorderorderDELETED6404E2A
+      - apiorderorderGETC56B6D83
+      - apiorderorderPUTD0B224A8
+      - apiorderorder7C8B855B
+      - apiorderGETB7CE71B3
+      - apiorderPOSTC12806D6
+      - apiorder98F852EC
+      - apiproductproductDELETE3FB0345A
+      - apiproductproductGETFB65077C
+      - apiproductproductPUTE08B4977
+      - apiproductproduct3618622A
+      - apiproductGETF0F8D3E2
+      - apiproductPOSTE2B4631B
+      - apiproduct9A0A13B7
+      - apisubscriptionC6D0885C
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Deployment/Resource
+  apiDeploymentStageprod40EDACCB:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId:
+        Ref: apiA9E0BAD5
+      DeploymentId:
+        Ref: apiDeployment7181E0E227e257b3d5c0d3a1fdf0054b1911cf8b
+      StageName: prod
+    DependsOn:
+      - apiAccountC58B84C9
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/DeploymentStage.prod/Resource
+  apiproduct9A0A13B7:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - apiA9E0BAD5
+          - RootResourceId
+      PathPart: product
+      RestApiId:
+        Ref: apiA9E0BAD5
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/Resource
+  apiproductGETApiPermissionArchiStackapi562322A2GETproduct665EC8DB:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /GET/product
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/GET/ApiPermission.ArchiStackapi562322A2.GET..product
+  apiproductGETApiPermissionTestArchiStackapi562322A2GETproductD4130328:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/GET/product
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/GET/ApiPermission.Test.ArchiStackapi562322A2.GET..product
+  apiproductGETF0F8D3E2:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId:
+        Ref: apiproduct9A0A13B7
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshproductServicecrud7D22A817
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/GET/Resource
+  apiproductPOSTApiPermissionArchiStackapi562322A2POSTproduct9095E929:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /POST/product
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/POST/ApiPermission.ArchiStackapi562322A2.POST..product
+  apiproductPOSTApiPermissionTestArchiStackapi562322A2POSTproductD709FD0D:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/POST/product
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/POST/ApiPermission.Test.ArchiStackapi562322A2.POST..product
+  apiproductPOSTE2B4631B:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      ResourceId:
+        Ref: apiproduct9A0A13B7
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshproductServicecrud7D22A817
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/POST/Resource
+  apiproductproduct3618622A:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: apiproduct9A0A13B7
+      PathPart: "{product}"
+      RestApiId:
+        Ref: apiA9E0BAD5
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/Resource
+  apiproductproductGETApiPermissionArchiStackapi562322A2GETproductproductFD7AC4D9:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /GET/product/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/GET/ApiPermission.ArchiStackapi562322A2.GET..product.{product}
+  apiproductproductGETApiPermissionTestArchiStackapi562322A2GETproductproductFFD8FF9F:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/GET/product/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/GET/ApiPermission.Test.ArchiStackapi562322A2.GET..product.{product}
+  apiproductproductGETFB65077C:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId:
+        Ref: apiproductproduct3618622A
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshproductServicecrud7D22A817
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/GET/Resource
+  apiproductproductDELETEApiPermissionArchiStackapi562322A2DELETEproductproductAB5B4B61:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /DELETE/product/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/DELETE/ApiPermission.ArchiStackapi562322A2.DELETE..product.{product}
+  apiproductproductDELETEApiPermissionTestArchiStackapi562322A2DELETEproductproduct8A43B5B8:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/DELETE/product/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/DELETE/ApiPermission.Test.ArchiStackapi562322A2.DELETE..product.{product}
+  apiproductproductDELETE3FB0345A:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: DELETE
+      ResourceId:
+        Ref: apiproductproduct3618622A
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshproductServicecrud7D22A817
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/DELETE/Resource
+  apiproductproductPUTApiPermissionArchiStackapi562322A2PUTproductproduct96B59D11:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /PUT/product/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/PUT/ApiPermission.ArchiStackapi562322A2.PUT..product.{product}
+  apiproductproductPUTApiPermissionTestArchiStackapi562322A2PUTproductproductF6D733A8:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshproductServicecrud7D22A817
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/PUT/product/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/PUT/ApiPermission.Test.ArchiStackapi562322A2.PUT..product.{product}
+  apiproductproductPUTE08B4977:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: PUT
+      ResourceId:
+        Ref: apiproductproduct3618622A
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshproductServicecrud7D22A817
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/product/{product}/PUT/Resource
+  apiorder98F852EC:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - apiA9E0BAD5
+          - RootResourceId
+      PathPart: order
+      RestApiId:
+        Ref: apiA9E0BAD5
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/Resource
+  apiorderGETApiPermissionArchiStackapi562322A2GETorder67E2E7AA:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /GET/order
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/GET/ApiPermission.ArchiStackapi562322A2.GET..order
+  apiorderGETApiPermissionTestArchiStackapi562322A2GETorderB1DB927D:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/GET/order
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/GET/ApiPermission.Test.ArchiStackapi562322A2.GET..order
+  apiorderGETB7CE71B3:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId:
+        Ref: apiorder98F852EC
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshorderServicecrud188BBC8C
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/GET/Resource
+  apiorderPOSTApiPermissionArchiStackapi562322A2POSTorder4F7B9410:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /POST/order
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/POST/ApiPermission.ArchiStackapi562322A2.POST..order
+  apiorderPOSTApiPermissionTestArchiStackapi562322A2POSTorder2DA2E474:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/POST/order
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/POST/ApiPermission.Test.ArchiStackapi562322A2.POST..order
+  apiorderPOSTC12806D6:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: POST
+      ResourceId:
+        Ref: apiorder98F852EC
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshorderServicecrud188BBC8C
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/POST/Resource
+  apiorderorder7C8B855B:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Ref: apiorder98F852EC
+      PathPart: "{order}"
+      RestApiId:
+        Ref: apiA9E0BAD5
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/Resource
+  apiorderorderGETApiPermissionArchiStackapi562322A2GETorderorder2243D19A:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /GET/order/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/GET/ApiPermission.ArchiStackapi562322A2.GET..order.{order}
+  apiorderorderGETApiPermissionTestArchiStackapi562322A2GETorderorder23904D50:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/GET/order/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/GET/ApiPermission.Test.ArchiStackapi562322A2.GET..order.{order}
+  apiorderorderGETC56B6D83:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: GET
+      ResourceId:
+        Ref: apiorderorder7C8B855B
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshorderServicecrud188BBC8C
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/GET/Resource
+  apiorderorderDELETEApiPermissionArchiStackapi562322A2DELETEorderorderC6104F10:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /DELETE/order/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/DELETE/ApiPermission.ArchiStackapi562322A2.DELETE..order.{order}
+  apiorderorderDELETEApiPermissionTestArchiStackapi562322A2DELETEorderorderC65F4F4A:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/DELETE/order/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/DELETE/ApiPermission.Test.ArchiStackapi562322A2.DELETE..order.{order}
+  apiorderorderDELETED6404E2A:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: DELETE
+      ResourceId:
+        Ref: apiorderorder7C8B855B
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshorderServicecrud188BBC8C
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/DELETE/Resource
+  apiorderorderPUTApiPermissionArchiStackapi562322A2PUTorderorder110B2384:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /
+            - Ref: apiDeploymentStageprod40EDACCB
+            - /PUT/order/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/PUT/ApiPermission.ArchiStackapi562322A2.PUT..order.{order}
+  apiorderorderPUTApiPermissionTestArchiStackapi562322A2PUTorderorder344EED7D:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Fn::GetAtt:
+          - servicemeshorderServicecrud188BBC8C
+          - Arn
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        Fn::Join:
+          - ""
+          - - "arn:"
+            - Ref: AWS::Partition
+            - ":execute-api:us-east-1:375778278142:"
+            - Ref: apiA9E0BAD5
+            - /test-invoke-stage/PUT/order/*
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/PUT/ApiPermission.Test.ArchiStackapi562322A2.PUT..order.{order}
+  apiorderorderPUTD0B224A8:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      HttpMethod: PUT
+      ResourceId:
+        Ref: apiorderorder7C8B855B
+      RestApiId:
+        Ref: apiA9E0BAD5
+      AuthorizationType: NONE
+      Integration:
+        IntegrationHttpMethod: POST
+        RequestTemplates:
+          application/json: '{ "statusCode": "200" }'
+        Type: AWS_PROXY
+        Uri:
+          Fn::Join:
+            - ""
+            - - "arn:"
+              - Ref: AWS::Partition
+              - :apigateway:us-east-1:lambda:path/2015-03-31/functions/
+              - Fn::GetAtt:
+                  - servicemeshorderServicecrud188BBC8C
+                  - Arn
+              - /invocations
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/order/{order}/PUT/Resource
+  apisubscriptionC6D0885C:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - apiA9E0BAD5
+          - RootResourceId
+      PathPart: subscription
+      RestApiId:
+        Ref: apiA9E0BAD5
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/subscription/Resource
+  apiauth6FAAB232:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId:
+        Fn::GetAtt:
+          - apiA9E0BAD5
+          - RootResourceId
+      PathPart: auth
+      RestApiId:
+        Ref: apiA9E0BAD5
+    Metadata:
+      aws:cdk:path: ArchiStack/api/api/Default/auth/Resource
+  CDKMetadata:
+    Type: AWS::CDK::Metadata
+    Properties:
+      Analytics: v2:deflate64:H4sIAAAAAAAA/1VRy07DMBD8lt5dQ8vjnoK4IKAqSBwrx1nSTfyIYpsqsvzv+BE15TQzzqx3xtnS7QO9XbGzWfOmXwusqf+0jPckHh09Mkn9QQsgTz8q414L5FOShQXCdQO1Q9FQv8cBBCrYj7oDbrOr0GIb5u+LM1uu+DfUJ637QHppqH+FvClBJZCZJDIJxNxRv3O8h7xlZgWWiP90ETtmIJBmUkzqJpb9YnVpl0kggsm6YUcV03aGvmd4cYpb1CouPTJjwBpaJZjN1MfxiycVglGiMVEFwgZsmYUzm+JDgrHVgPktF1pxrp2y5BkGoScJKje6UvF/tDliIXFUu5FDanIR852Fv4E96SYdFRbC4svB00Wo2uT4cHZw9no8kFSedubmd/NIN/d0u+oM4nqMIVECPRT8A6JGLkg6AgAA
+    Metadata:
+      aws:cdk:path: ArchiStack/CDKMetadata/Default
+Outputs:
+  apiEndpointAA7B4F3B:
+    Value:
+      Fn::Join:
+        - ""
+        - - https://
+          - Ref: apiA9E0BAD5
+          - .execute-api.us-east-1.
+          - Ref: AWS::URLSuffix
+          - /
+          - Ref: apiDeploymentStageprod40EDACCB
+          - /
+Parameters:
+  BootstrapVersion:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /cdk-bootstrap/hnb659fds/version
+    Description: Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]
+Rules:
+  CheckBootstrapVersion:
+    Assertions:
+      - Assert:
+          Fn::Not:
+            - Fn::Contains:
+                - - "1"
+                  - "2"
+                  - "3"
+                  - "4"
+                  - "5"
+                - Ref: BootstrapVersion
+        AssertDescription: CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.
+
