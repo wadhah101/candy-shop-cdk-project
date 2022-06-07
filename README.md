@@ -138,3 +138,7 @@ phases:
     - npm run cdk deploy
 
 ```
+
+### Pipeline screenshot
+
+![pieline](pipeline.png)
