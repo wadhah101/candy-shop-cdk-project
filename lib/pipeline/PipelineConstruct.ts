@@ -47,6 +47,43 @@ export class PipelineDeployTest extends Construct {
 
   TestingCodeBuildProject = new codebuild.PipelineProject(
     this,
+    "CodeBuildProjectDeploy",
+    {
+      // role: this.adminRole,
+      environment: {
+        privileged: true,
+        buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
+        computeType: codebuild.ComputeType.MEDIUM,
+      },
+      buildSpec: codebuild.BuildSpec.fromObject({
+        version: 0.2,
+        phases: {
+          install: {
+            "runtime-versions": { nodejs: "14" },
+            commands: ["n 16", "npm install -g pnpm", "pnpm install"],
+          },
+          pre_build: {
+            commands: ["echo initialise..."],
+          },
+          build: {
+            commands: ["echo Build started on `date`", "npm run test-ci"],
+          },
+        },
+        reports: {
+          "candy-shop-report-grouo": {
+            files: ["junit.xml"],
+            "file-format": "JUNITXML",
+          },
+        },
+        artifacts: {
+          // files: `imagedefinitions.json`,
+        },
+      }),
+    }
+  );
+
+  DeploygCodeBuildProject = new codebuild.PipelineProject(
+    this,
     "CodeBuildProject",
     {
       role: this.adminRole,
