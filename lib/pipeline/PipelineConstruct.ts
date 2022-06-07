@@ -58,12 +58,15 @@ export class PipelineDeployTest extends Construct {
       buildSpec: codebuild.BuildSpec.fromObject({
         version: 0.2,
         phases: {
+          install: {
+            "runtime-versions": { nodejs: "14" },
+            commands: ["pnpm install"],
+          },
           pre_build: {
             commands: ["echo initialise..."],
           },
           build: {
-            "runtime-versions": { nodejs: "14" },
-            commands: ["echo Build started on `date`"],
+            commands: ["echo Build started on `date`", "npm run test"],
           },
         },
         artifacts: {
