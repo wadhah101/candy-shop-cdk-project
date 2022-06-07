@@ -49,7 +49,7 @@ export class PipelineDeployTest extends Construct {
     this,
     "CodeBuildProject",
     {
-      // role: this.adminRole,
+      role: this.adminRole,
       environment: {
         privileged: true,
         buildImage: codebuild.LinuxBuildImage.STANDARD_5_0,
