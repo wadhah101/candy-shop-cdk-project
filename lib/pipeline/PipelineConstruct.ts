@@ -47,7 +47,7 @@ export class PipelineDeployTest extends Construct {
 
   TestingCodeBuildProject = new codebuild.PipelineProject(
     this,
-    "CodeBuildProjectDeploy",
+    "CodeBuildProject",
     {
       // role: this.adminRole,
       environment: {
@@ -84,7 +84,7 @@ export class PipelineDeployTest extends Construct {
 
   DeploygCodeBuildProject = new codebuild.PipelineProject(
     this,
-    "CodeBuildProject",
+    "CodeBuildProjectDeploy",
     {
       role: this.adminRole,
       environment: {
@@ -103,7 +103,7 @@ export class PipelineDeployTest extends Construct {
             commands: ["echo initialise..."],
           },
           build: {
-            commands: ["echo Build started on `date`", "npm run test-ci"],
+            commands: ["echo Build started on `date`", "npm run cdk deploy"],
           },
         },
         reports: {
@@ -120,11 +120,20 @@ export class PipelineDeployTest extends Construct {
   );
 
   private testAction = new actions.CodeBuildAction({
-    actionName: "BuildContainer",
+    actionName: "TestAction",
     runOrder: 1,
     project: this.TestingCodeBuildProject,
     input: new codepipeline.Artifact("Source"),
     outputs: [new codepipeline.Artifact("TestOutput")],
+    environmentVariables: {},
+  });
+
+  private deployAction = new actions.CodeBuildAction({
+    actionName: "deployAction",
+    runOrder: 1,
+    project: this.DeploygCodeBuildProject,
+    input: new codepipeline.Artifact("Source"),
+    outputs: [new codepipeline.Artifact("DeployOutput")],
     environmentVariables: {},
   });
 
@@ -140,6 +149,7 @@ export class PipelineDeployTest extends Construct {
           stageName: "build",
           actions: [this.testAction],
         },
+        { stageName: "deploy", actions: [this.deployAction] },
       ],
     }
   );
