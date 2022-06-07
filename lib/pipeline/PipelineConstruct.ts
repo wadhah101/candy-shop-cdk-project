@@ -60,7 +60,7 @@ export class PipelineDeployTest extends Construct {
         phases: {
           install: {
             "runtime-versions": { nodejs: "14" },
-            commands: ["pnpm install"],
+            commands: ["npm install -g pnpm", "pnpm install"],
           },
           pre_build: {
             commands: ["echo initialise..."],
